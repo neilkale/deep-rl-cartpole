@@ -20,7 +20,7 @@ print('done:', done)
 print('info:', info)
 
 # Uncomment to open a GUI window rendering the current state of the environment
-# env.render()
+env.render()
 
 class QFunction(torch.nn.Module):
 

@@ -1,3 +1,5 @@
+# This is just for playing with some parameters
+
 import gym
 env = gym.make("MountainCar-v0")
 observation = env.reset(seed=42)
