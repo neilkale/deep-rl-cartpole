@@ -3,12 +3,9 @@ import torch
 import torch.nn
 import gym
 import numpy
-import matplotlib.pyplot as plt
-import addcopyfighandler
 #from gym.wrappers.record_video import RecordVideo
 
 env = gym.make('CartPole-v1')
-print(env)
 print('observation space:', env.observation_space)
 print('action space:', env.action_space)
 
@@ -16,7 +13,6 @@ obs = env.reset()
 print('initial observation:', obs)
 
 action = env.action_space.sample()
-print(action)
 obs, r, done, info = env.step(action)
 print('next observation:', obs)
 print('reward:', r)
@@ -42,24 +38,20 @@ class QFunction(torch.nn.Module):
         return pfrl.action_value.DiscreteActionValue(h)
 
 obs_size = env.observation_space.low.size
-print(obs_size)
 n_actions = env.action_space.n
-print(env.action_space, n_actions)
 q_func = QFunction(obs_size, n_actions)
-print(q_func)
 
-# q_func2 = torch.nn.Sequential(
-#     torch.nn.Linear(obs_size, 50),
-#     torch.nn.ReLU(),
-#     torch.nn.Linear(50, 50),
-#     torch.nn.ReLU(),
-#     torch.nn.Linear(50, n_actions),
-#     pfrl.q_functions.DiscreteActionValueHead(),
-# )
+q_func2 = torch.nn.Sequential(
+    torch.nn.Linear(obs_size, 50),
+    torch.nn.ReLU(),
+    torch.nn.Linear(50, 50),
+    torch.nn.ReLU(),
+    torch.nn.Linear(50, n_actions),
+    pfrl.q_functions.DiscreteActionValueHead(),
+)
 
 # Use Adam to optimize q_func. eps=1e-2 is for stability.
 optimizer = torch.optim.Adam(q_func.parameters(), eps=1e-2)
-print(optimizer)
 
 # Set the discount factor that discounts future rewards.
 gamma = 0.9
@@ -67,19 +59,15 @@ gamma = 0.9
 # Use epsilon-greedy for exploration
 explorer = pfrl.explorers.ConstantEpsilonGreedy(
     epsilon=0.3, random_action_func=env.action_space.sample)
-print(explorer)
 
 # DQN uses Experience Replay.
 # Specify a replay buffer and its capacity.
 replay_buffer = pfrl.replay_buffers.ReplayBuffer(capacity=10 ** 6)
-print(replay_buffer)
-
 
 # Since observations from CartPole-v0 is numpy.float64 while
 # As PyTorch only accepts numpy.float32 by default, specify
 # a converter as a feature extractor function phi.
 phi = lambda x: x.astype(numpy.float32, copy=False)
-print(phi)
 
 # Set the device id to use GPU. To use CPU only, set it to -1.
 gpu = -1
@@ -97,18 +85,13 @@ agent = pfrl.agents.DoubleDQN(
     phi=phi,
     gpu=gpu,
 )
-print(agent)
 
-reward_val = []
-reward_avg = []
-reward_max = []
-n_episodes = 200
-max_episode_len = 100
+n_episodes = 300
+max_episode_len = 200
 for i in range(1, n_episodes + 1):
     obs = env.reset()
     R = 0  # return (sum of rewards)
     t = 0  # time step
-    reward_avg_list = []
     while True:
         # Uncomment to watch the behavior in a GUI window
         env.render()
@@ -118,31 +101,13 @@ for i in range(1, n_episodes + 1):
         t += 1
         reset = t == max_episode_len
         agent.observe(obs, reward, done, reset)
-        reward_val.append(R)
-        reward_avg_list.append(R)
         if done or reset:
             break
-        if i % 10 == 0:
-            print('episode:', i, 'R:', R, 't:', t)
-        if i % 50 == 0:
-            print('statistics:', agent.get_statistics())
-    reward_avg.append(sum(reward_avg_list)/len(reward_avg_list))
-    reward_max.append(max(reward_avg_list))
-    print('Finished.')
-
-# plt.plot(reward_val)
-# plt.title('Rewards with ' + str(n_episodes) + ' episodes with max epsiode length: ' + str(max_episode_len))
-# plt.show()
-#
-# plt.plot(reward_avg)
-# plt.title('Average reward with a length of ' + str(max_episode_len) + ' per episode for ' + str(n_episodes) + ' episodes')
-# plt.show()
-
-plt.plot(reward_max)
-plt.xlabel('Episodes')
-plt.ylabel('Reward')
-plt.title('Reward with a length of ' + str(max_episode_len) + ' per episode for ' + str(n_episodes) + ' episodes during training')
-plt.show()
+    if i % 10 == 0:
+        print('episode:', i, 'R:', R)
+    if i % 50 == 0:
+        print('statistics:', agent.get_statistics())
+print('Finished.')
 
 with agent.eval_mode():
     for i in range(10):
@@ -176,7 +141,7 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout, format='')
 pfrl.experiments.train_agent_with_evaluation(
     agent,
     env,
-    steps=2000,           # Train the agent for 2000 steps
+    steps=10000,           # Train the agent for 2000 steps
     eval_n_steps=None,       # We evaluate for episodes, not time
     eval_n_episodes=10,       # 10 episodes are sampled for each evaluation
     train_max_episode_len=200,  # Maximum length of each episode
