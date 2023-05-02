@@ -10,6 +10,7 @@ import addcopyfighandler
 from torchviz import make_dot
 from torchsummary import summary
 import time
+from scipy import stats
 
 env = gym.make('CartPole-v1')
 print(env)
@@ -124,7 +125,7 @@ for i in range(1, n_episodes + 1):
         obs, reward, done, _ = env.step(action)
         R += reward
         t += 1
-        time.sleep(0.005)
+        #time.sleep(0.005)
         reset = t == max_episode_len
         agent.observe(obs, reward, done, reset)
         reward_val.append(R)
@@ -139,19 +140,24 @@ for i in range(1, n_episodes + 1):
     reward_max.append(max(reward_avg_list))
     print('episode:', i, 'R:', R, 't:', t, 'statistics:', agent.get_statistics())
 
+train_reward_array = np.asarray(reward_max)
+train_reward_array = train_reward_array.reshape((1, -1))
+print(train_reward_array.shape)
+np.save('training_array_500.npy', train_reward_array)
+print('Training')
+print('Mean = ', str(round(np.mean(reward_max), 1)), ' , STD = ', str(round(np.std(reward_max), 1)))
 plt.plot(reward_max)
-plt.xlabel('Episodes')
-plt.ylabel('Reward')
+plt.xlabel('Training Episode Number')
+plt.ylabel('Reward Attained')
 reward_max = np.asarray(reward_max)
-plt.title(str(max_episode_len) + ' per episode for ' + str(n_episodes) + ' episodes during training (Average: ' +
-          str(round(np.mean(reward_max), 1)) + u"\u00B1" + str(round(np.std(reward_max), 1)) + ')')
-plt.savefig('Train_Bad.png')
+plt.title('Reward Attained over Training Episodes (n = ' + str(n_episodes) + ')')
+#plt.savefig('Train_Bad.png')
 plt.show()
 
 reward_values_eval = []
 
 with agent.eval_mode():
-    for i in range(500):
+    for i in range(2000):
         obs = env.reset()
         env.render()
         R = 0
@@ -163,22 +169,51 @@ with agent.eval_mode():
             obs, r, done, _ = env.step(action)
             R += r
             t += 1
-            reset = t == 100
+            reset = t == 2000
             agent.observe(obs, r, done, reset)
             if done or reset:
                 break
         print('evaluation episode:', i, 'R:', R)
         reward_values_eval.append(R)
 
+eval_reward_array = np.asarray(reward_values_eval)
 print(reward_values_eval)
-reward_values_eval = np.asarray(reward_values_eval)
+mean_eval = np.zeros((1, 1))
+mean_eval[0] = round(np.mean(reward_values_eval), 1)
+print(mean_eval.shape)
+np.save('evaluation_array_500.npy', mean_eval)
+reward_values_eval.append(0)
+reward_values_eval = reward_values_eval[1:]
+testing_rewards = reward_values_eval
+testing_rewards = np.sort(testing_rewards)
+plt.hist(testing_rewards,bins=500, density=True, alpha=0.6, color='g')
+params = stats.skewnorm.fit(testing_rewards)
+
+ax = plt.gca()
+ax.set_xlim([0, 523])
+
+xmin, xmax = plt.xlim()
+x = np.linspace(xmin, xmax, 1000)
+p = stats.skewnorm.pdf(x,params[0],params[1],params[2])
+plt.plot(x, p, 'k', linewidth=2)
+plt.xlabel("Reward Attained")
+plt.ylabel("Percentage of rewards in each bin")
+plt.title("Reward Attained over Testing Episodes (n = 2000)")
+print("Peak", x[np.argmax(p)])
+print("Mean", np.mean(testing_rewards))
+plt.show()
+
+
 print(np.mean(reward_values_eval), np.std(reward_values_eval))
 plt.plot(reward_values_eval)
 plt.title('Reward over episodes during testing (Average: ' + str(round(np.mean(reward_values_eval), 1)) + u"\u00B1" + str(round(np.std(reward_values_eval), 1)) + ')')
 plt.xlabel('Episodes')
 plt.ylabel('Rewards')
-plt.savefig('Test_Bad.png')
+#plt.savefig('Test_Bad.png')
 plt.show()
+
+print('Evaluation')
+print('Mean = ', str(round(np.mean(reward_values_eval), 1)), ' , STD = ', str(round(np.std(reward_values_eval), 1)))
 
 # Save an agent to the 'agent' directory
 agent.save('agent')
