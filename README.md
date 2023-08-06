@@ -3,4 +3,4 @@ In the final project, our team (Neil Kale and Keshav Bimbraw) wanted to learn mo
 
 [![Still frame from our agent for the OpenAI Cart-Pole simulation.](http://img.youtube.com/vi/UjcjXh7-Qp0/0.jpg)](http://www.youtube.com/watch?v=UjcjXh7-Qp0 "CS534 Artificial Intelligence Final Project Clip")
 
-We discovered that both given enough learning time, Q-learning and DQN agents have the capacity to learn the simulation. However DQN appears to learn faster. Further details including our exploration of training hyperparameters and detailed comparisons for various training episode lengths are included in the attached Final Writeup PDF file.
+We discovered that both given enough learning time, Q-learning and DQN agents have the capacity to learn the simulation. However DQN appears to learn faster. Further details including our exploration of training hyperparameters and detailed comparisons for various training episode lengths are included in the attached [Final Writeup PDF file](https://github.com/neilkale/deep-rl-cartpole/blob/main/CS%20534%20Final%20Project%20Writeup.pdf).
